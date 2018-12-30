@@ -4,13 +4,9 @@ import (
 	"testing"
 
 	"github.com/cozely/journal"
-	"golang.org/x/sys/unix"
 )
 
-var (
-	null, _ = unix.Open("/dev/null", unix.O_WRONLY, 0)
-	jnal    = journal.New().InfoTo(null).WarnTo(null).DebugTo(null)
-)
+var jnal = journal.New().InfoTo("/dev/null").WarnTo("/dev/null").DebugTo("/dev/null")
 
 func BenchmarkInfoInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
