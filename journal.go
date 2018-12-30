@@ -12,16 +12,16 @@ import (
 
 var (
 	buf     = bytes.NewBuffer(make([]byte, 0, 256))
-	printfd = unix.Stdout
+	infofd = unix.Stdout
 	warnfd  = unix.Stderr
 	debugfd = unix.Stderr
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func PrintTo(fd int) {
+func InfoTo(fd int) {
 	//TODO check fd
-	printfd = fd
+	infofd = fd
 }
 
 func WarnTo(fd int) {
@@ -48,52 +48,37 @@ func New(prefix string, info bool) Journal {
 	}
 }
 
-func (j Journal) Put(msg string) {
-	if j.info && printfd !=0 {
-		write(buf, j.prefix)
-		write(buf, msg)
-		if msg == "" || msg[len(msg)-1] != '\n' {
-			buf.WriteByte('\n')
-		}
-		unix.Write(printfd, buf.Bytes())
-		buf.Reset()
-	}
-}
-
-func (j Journal) Print(msg ...string) {
-	if j.info && printfd !=0 {
-		write(buf, j.prefix)
-		writeln(buf, msg...)
-		unix.Write(printfd, buf.Bytes())
-		buf.Reset()
-	}
-}
-
-func (j Journal) Printf(format string, v ...interface{}) {
+func (j Journal) Info(format string, v ...interface{}) {
 	if j.info {
 		write(buf, j.prefix)
 		fmt.Fprintf(buf, format, v...)
 		if format == "" || format[len(format)-1] != '\n' {
 			buf.WriteByte('\n')
 		}
-		unix.Write(printfd, buf.Bytes())
+		unix.Write(infofd, buf.Bytes())
 		buf.Reset()
 	}
 }
 
-func (j Journal) Warn(msg ...string) {
+func (j Journal) Warn(format string, v ...interface{}) {
 	if warnfd != 0 {
 		write(buf, j.prefix)
-		writeln(buf, msg...)
+		fmt.Fprintf(buf, format, v...)
+		if format == "" || format[len(format)-1] != '\n' {
+			buf.WriteByte('\n')
+		}
 		unix.Write(warnfd, buf.Bytes())
 		buf.Reset()
 	}
 }
 
-func (j Journal) Debug(msg ...string) {
+func (j Journal) Debug(format string, v ...interface{}) {
 	if debugfd != 0 {
 		write(buf, j.prefix)
-		writeln(buf, msg...)
+		fmt.Fprintf(buf, format, v...)
+		if format == "" || format[len(format)-1] != '\n' {
+			buf.WriteByte('\n')
+		}
 		unix.Write(debugfd, buf.Bytes())
 		buf.Reset()
 	}
@@ -105,7 +90,8 @@ func (j Journal) Check(err error) bool {
 	}
 	if debugfd != 0 {
 		write(buf, j.prefix)
-		writeln(buf, err.Error())
+		write(buf, err.Error())
+		buf.WriteByte('\n')
 		unix.Write(debugfd, buf.Bytes())
 		buf.Reset()
 	}

@@ -9,50 +9,33 @@ import (
 
 func init() {
 	null, _ := unix.Open("/dev/null", unix.O_WRONLY, 0)
-	journal.PrintTo(null)
+	journal.InfoTo(null)
 	journal.WarnTo(null)
 	journal.DebugTo(null)
 }
+
 var log = journal.New("benchmark: ", true)
 
-func BenchmarkPut(b *testing.B) {
+func BenchmarkInfoInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		log.Put("Foo")
+		log.Info("Foo %d", n)
 	}
 }
 
-func BenchmarkPrint(b *testing.B) {
+func BenchmarkInfo3(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		log.Print("Foo")
+		log.Info("Foo%s%s", "Bar", "Baz")
 	}
 }
 
-func BenchmarkPrint3(b *testing.B) {
+func BenchmarkWarn3(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		log.Print("Foo", "Bar", "Baz")
+		log.Warn("Foo%s%s", "Bar", "Baz")
 	}
 }
 
-func BenchmarkPrintf(b *testing.B) {
+func BenchmarkDebug3(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		log.Printf("Foo %d", n)
-	}
-}
-
-func BenchmarkPrintf3(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		log.Printf("Foo%s%s", "Bar", "Baz")
-	}
-}
-
-func BenchmarkWarn(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		log.Warn("Foo", "Bar", "Baz")
-	}
-}
-
-func BenchmarkDebug(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		log.Warn("Foo", "Bar", "Baz")
+		log.Debug("Foo%s%s", "Bar", "Baz")
 	}
 }
