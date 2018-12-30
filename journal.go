@@ -2,61 +2,114 @@ package journal
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+
+	"golang.org/x/sys/unix"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 
+var (
+	buf     = bytes.NewBuffer(make([]byte, 0, 256))
+	printfd = unix.Stdout
+	warnfd  = unix.Stderr
+	debugfd = unix.Stderr
+)
+
+////////////////////////////////////////////////////////////////////////////////
+
+func PrintTo(fd int) {
+	//TODO check fd
+	printfd = fd
+}
+
+func WarnTo(fd int) {
+	//TODO check fd
+	warnfd = fd
+}
+
+func DebugTo(fd int) {
+	//TODO check fd
+	debugfd = fd
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 type Journal struct {
-	prefix            string
-	buf               *bytes.Buffer
-	info, warn, debug io.Writer
+	prefix string
+	info   bool
 }
 
-func New(prefix string, info, warn, debug io.Writer) *Journal {
-	return &Journal{
+func New(prefix string, info bool) Journal {
+	return Journal{
 		prefix: prefix,
-		buf:    bytes.NewBuffer(make([]byte, 0, 256)),
 		info:   info,
-		warn:   warn,
-		debug:  debug,
 	}
 }
 
-func (j *Journal) Info(msg ...string) {
-	if j.info != nil {
-		write(j.buf, j.prefix)
-		writeln(j.buf, msg...)
-		j.info.Write(j.buf.Bytes())
-		j.buf.Reset()
+func (j Journal) Put(msg string) {
+	if j.info && printfd !=0 {
+		write(buf, j.prefix)
+		write(buf, msg)
+		if msg == "" || msg[len(msg)-1] != '\n' {
+			buf.WriteByte('\n')
+		}
+		unix.Write(printfd, buf.Bytes())
+		buf.Reset()
 	}
 }
 
-func (j *Journal) Warn(msg ...string) {
-	if j.warn != nil {
-		write(j.buf, j.prefix)
-		writeln(j.buf, msg...)
-		j.warn.Write(j.buf.Bytes())
-		j.buf.Reset()
+func (j Journal) Print(msg ...string) {
+	if j.info && printfd !=0 {
+		write(buf, j.prefix)
+		writeln(buf, msg...)
+		unix.Write(printfd, buf.Bytes())
+		buf.Reset()
 	}
 }
 
-func (j *Journal) Debug(msg ...string) {
-	if j.debug != nil {
-		write(j.buf, j.prefix)
-		writeln(j.buf, msg...)
-		j.debug.Write(j.buf.Bytes())
-		j.buf.Reset()
+func (j Journal) Printf(format string, v ...interface{}) {
+	if j.info {
+		write(buf, j.prefix)
+		fmt.Fprintf(buf, format, v...)
+		if format == "" || format[len(format)-1] != '\n' {
+			buf.WriteByte('\n')
+		}
+		unix.Write(printfd, buf.Bytes())
+		buf.Reset()
 	}
 }
 
-func (j *Journal) Check(err error) {
-	if err != nil && j.debug != nil {
-		write(j.buf, j.prefix)
-		writeln(j.buf, err.Error())
-		j.debug.Write(j.buf.Bytes())
-		j.buf.Reset()
+func (j Journal) Warn(msg ...string) {
+	if warnfd != 0 {
+		write(buf, j.prefix)
+		writeln(buf, msg...)
+		unix.Write(warnfd, buf.Bytes())
+		buf.Reset()
 	}
+}
+
+func (j Journal) Debug(msg ...string) {
+	if debugfd != 0 {
+		write(buf, j.prefix)
+		writeln(buf, msg...)
+		unix.Write(debugfd, buf.Bytes())
+		buf.Reset()
+	}
+}
+
+func (j Journal) Check(err error) bool {
+	if err == nil {
+		return false
+	}
+	if debugfd != 0 {
+		write(buf, j.prefix)
+		writeln(buf, err.Error())
+		unix.Write(debugfd, buf.Bytes())
+		buf.Reset()
+	}
+	return true
 }
 
 func write(w io.ByteWriter, s string) {
