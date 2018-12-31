@@ -9,54 +9,83 @@ import (
 
 var (
 	null, _ = journal.Open("/dev/null")
-	jnal    = journal.New().InfoTo(null).WarnTo(null).DebugTo(null)
+	info    = journal.New(null, "", journal.LstdFlags)
+	nilj    = journal.New(nil, "")
 )
 
 func init() {
-	null, _ := journal.Open("/dev/null")
 	log.SetOutput(null)
 	log.SetFlags(0)
+	journal.SetOutput(null)
 }
 
-// var jnal = journal.New().InfoTo(nil).WarnTo(nil).DebugTo(nil)
-
-func BenchmarkInfo(b *testing.B) {
+func BenchmarkPrint(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		jnal.Info("Foo%s%s", "Bar", "Baz")
+		info.Print("Foo", "Bar", "Baz")
 	}
 }
 
-func BenchmarkInfoInt(b *testing.B) {
+func BenchmarkPrintInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		jnal.Info("Foo %d", n)
+		info.Print("Foo", n)
 	}
 }
 
-func BenchmarkWarn(b *testing.B) {
+func BenchmarkPrintln(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		jnal.Warn("Foo%s%s", "Bar", "Baz")
+		info.Println("Foo", "Bar", "Baz")
 	}
 }
 
-func BenchmarkDebug(b *testing.B) {
+func BenchmarkPrintlnInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		jnal.Debug("Foo%s%s", "Bar", "Baz")
+		info.Println("Foo", n)
 	}
 }
 
-func BenchmarkStdLogPrint(b *testing.B) {
+func BenchmarkPrintf(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		log.Print("Foo", "Bar", "Baz")
+		info.Printf("Foo%s%s", "Bar", "Baz")
 	}
 }
 
-func BenchmarkStdLogPrintf(b *testing.B) {
+func BenchmarkPrintfInt(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		info.Printf("Foo %d", n)
+	}
+}
+
+func BenchmarkNilPrintf(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		nilj.Printf("Foo%s%s", "Bar", "Baz")
+	}
+}
+
+func BenchmarkNilPrintfInt(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		nilj.Printf("Foo %d", n)
+	}
+}
+
+func BenchmarkStdPrintf(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		journal.Printf("Foo%s%s", "Bar", "Baz")
+	}
+}
+
+func BenchmarkStdPrintfInt(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		journal.Printf("Foo %d", n)
+	}
+}
+
+func BenchmarkLogPrintf(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		log.Printf("Foo%s%s", "Bar", "Baz")
 	}
 }
 
-func BenchmarkStdLogPrintfInt(b *testing.B) {
+func BenchmarkLogPrintfInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		log.Printf("Foo %d", n)
 	}
